@@ -1,13 +1,18 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
+#define M1_PIN 19
+#define M2_PIN 21
+#define M3_PIN 22
+#define M4_PIN 23
+
 // Structure example to receive data
 // Must match the sender structure
 typedef struct struct_message {
-  int X1;
-  int Y1;
-  int X2;
-  int Y2;
+  int M1;
+  int M2;
+  int M3;
+  int M4;
 } struct_message;
 
 // Create a struct_message called myData
@@ -18,21 +23,31 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&myData, incomingData, sizeof(myData));
   Serial.print("Bytes received: ");
   Serial.println(len);
-  Serial.print("X1: ");
-  Serial.println(myData.X1);
-  Serial.print("Y1: ");
-  Serial.println(myData.Y1);
-  Serial.print("X2: ");
-  Serial.println(myData.X2);
-  Serial.print("Y2: ");
-  Serial.println(myData.Y2);
+  Serial.print("M1: ");
+  Serial.println(myData.M1);
+  Serial.print("M2: ");
+  Serial.println(myData.M2);
+  Serial.print("M3: ");
+  Serial.println(myData.M3);
+  Serial.print("M4: ");
+  Serial.println(myData.M4);
   Serial.println();
+
+  analogWrite(M1_PIN, myData.M4);
+  analogWrite(M2_PIN, myData.M4);
+  analogWrite(M3_PIN, myData.M4);
+  analogWrite(M4_PIN, myData.M4);
 }
  
 void setup() {
   // Initialize Serial Monitor
   Serial.begin(115200);
-  
+
+  pinMode(M1_PIN, OUTPUT);
+  pinMode(M2_PIN, OUTPUT);
+  pinMode(M3_PIN, OUTPUT);
+  pinMode(M4_PIN, OUTPUT);
+
   // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
 
