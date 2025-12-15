@@ -1,10 +1,10 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-#define X1_PIN 32 // ESP32 ADC1 Pins 32~39
-#define Y1_PIN 33
-#define X2_PIN 34
-#define Y2_PIN 35
+#define M1_PIN 32 // ESP32 ADC1 Pins 32~39
+#define M2_PIN 33
+#define M3_PIN 34
+#define M4_PIN 35
 
 // REPLACE WITH YOUR RECEIVER MAC Address
 uint8_t broadcastAddress[] = {0xf0,0x24,0xf9,0x7a,0xe5,0x7c};
@@ -12,10 +12,10 @@ uint8_t broadcastAddress[] = {0xf0,0x24,0xf9,0x7a,0xe5,0x7c};
 // Structure example to send data
 // Must match the receiver structure
 typedef struct struct_message {
-  int X1;
-  int Y1;
-  int X2;
-  int Y2;
+  int M1;
+  int M2;
+  int M3;
+  int M4;
 } struct_message;
 
 // Create a struct_message called myData
@@ -60,20 +60,21 @@ void setup() {
  
 void loop() {
   // Set values to send
-  myData.X1 = analogRead(X1_PIN);
-  myData.Y1 = analogRead(Y1_PIN);
-  myData.X2 = analogRead(X2_PIN);
-  myData.Y2 = analogRead(Y2_PIN);
+  myData.M1 =  map(analogRead(M1_PIN), 0, 4095, 0, 255);
+  myData.M2 =  map(analogRead(M2_PIN), 0, 4095, 255, 0);
+  myData.M3 =  map(analogRead(M3_PIN), 0, 4095, 0, 255);
+  myData.M4 =  map(analogRead(M4_PIN), 0, 4095, 255, 0);
   
-  Serial.print("x1 = ");
-  Serial.print(valueX1);
-  Serial.print(", y1 = ");
-  Serial.println(valueY1);
+  
+  Serial.print("m1 = ");
+  Serial.print(myData.M1);
+  Serial.print(", m2 = ");
+  Serial.println(myData.M2);
 
-  Serial.print("x2 = ");
-  Serial.print(valueX2);
-  Serial.print(", y2 = ");
-  Serial.println(valueY2);
+  Serial.print("m3 = ");
+  Serial.print(myData.M3);
+  Serial.print(", m4 = ");
+  Serial.println(myData.M4);
   
   // Send message via ESP-NOW
   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
@@ -84,5 +85,5 @@ void loop() {
   else {
     Serial.println("Error sending the data");
   }
-  delay(2000);
+  delay(10);
 }
