@@ -60,20 +60,18 @@ void setup() {
  
 void loop() {
   // Set values to send
-  myData.M1 =  map(analogRead(M1_PIN), 0, 4095, 0, 255);
-  myData.M2 =  map(analogRead(M2_PIN), 0, 4095, 255, 0);
-  myData.M3 =  map(analogRead(M3_PIN), 0, 4095, 0, 255);
-  myData.M4 =  map(analogRead(M4_PIN), 0, 4095, 255, 0);
+  myData.M1 = map(analogRead(M1_PIN), 0, 4095, 0, 255);
+  myData.M2 = map(analogRead(M2_PIN), 0, 4095, 255, 0);
+  myData.M3 = map(analogRead(M3_PIN), 0, 4095, 0, 255);
+  myData.M4 = map(analogRead(M4_PIN), 0, 4095, 255, 0);
   
-  
-  Serial.print("m1 = ");
+  Serial.print("M1 = ");
   Serial.print(myData.M1);
-  Serial.print(", m2 = ");
+  Serial.print(", M2 = ");
   Serial.println(myData.M2);
-
-  Serial.print("m3 = ");
+  Serial.print("M3 = ");
   Serial.print(myData.M3);
-  Serial.print(", m4 = ");
+  Serial.print(", M4 = ");
   Serial.println(myData.M4);
   
   // Send message via ESP-NOW
