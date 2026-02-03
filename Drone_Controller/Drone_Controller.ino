@@ -1,25 +1,25 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-#define M1_PIN 32 // ESP32 ADC1 Pins 32~39
-#define M2_PIN 33
-#define M3_PIN 34
-#define M4_PIN 35
+#define roll_pin 4 // ESP32 ADC1 Pins 32~39
+#define pitch_pin 3
+#define yaw_pin 2
+#define thrust_pin 1
 
 // REPLACE WITH YOUR RECEIVER MAC Address
-uint8_t broadcastAddress[] = {0xf0,0x24,0xf9,0x7a,0xe5,0x7c};
+uint8_t broadcastAddress[] = {0x10, 0xb4, 0x1d, 0xe8, 0x1a, 0x34};
 
 // Structure example to send data
 // Must match the receiver structure
 typedef struct struct_message {
-  int M1;
-  int M2;
-  int M3;
-  int M4;
+  float roll;
+  float pitch;
+  float yaw;
+  int thrust;
 } struct_message;
 
-// Create a struct_message called myData
-struct_message myData;
+// Create a struct_message called droneData
+struct_message droneData;
 
 esp_now_peer_info_t peerInfo;
 
@@ -57,25 +57,43 @@ void setup() {
     return;
   }
 }
- 
+
+float joystickValue(int analogValue) {
+  float joystick;
+  if (analogValue > 1854) {
+    joystick = map (analogValue, 1855, 4095, 0, 50);
+  } else {
+    joystick = map (analogValue, 0, 1854, -50, 0);
+  }
+  return joystick;
+}
+
 void loop() {
   // Set values to send
-  myData.M1 = map(analogRead(M1_PIN), 0, 4095, 0, 255);
-  myData.M2 = map(analogRead(M2_PIN), 0, 4095, 255, 0);
-  myData.M3 = map(analogRead(M3_PIN), 0, 4095, 0, 255);
-  myData.M4 = map(analogRead(M4_PIN), 0, 4095, 255, 0);
-  
-  Serial.print("M1 = ");
-  Serial.print(myData.M1);
-  Serial.print(", M2 = ");
-  Serial.println(myData.M2);
-  Serial.print("M3 = ");
-  Serial.print(myData.M3);
-  Serial.print(", M4 = ");
-  Serial.println(myData.M4);
+  droneData.roll = joystickValue(analogRead(roll_pin))/100;
+  droneData.pitch = joystickValue(analogRead(pitch_pin))/100;
+  droneData.yaw = joystickValue(analogRead(yaw_pin))/100;
+  droneData.thrust = map(analogRead(thrust_pin), 0, 4095, 0, 255);
+
+  Serial.print("Roll = ");
+  Serial.print(droneData.roll);
+  Serial.print(", Pitch = ");
+  Serial.println(droneData.pitch);
+  Serial.print("Yaw = ");
+  Serial.print(droneData.yaw);
+  Serial.print(", Thrust = ");
+  Serial.println(droneData.thrust);
+  /*Serial.print("Raw Roll = ");
+  Serial.print(analogRead(roll_pin));
+  Serial.print(", Raw Pitch = ");
+  Serial.println(analogRead(pitch_pin));
+  Serial.print("Raw Yaw = ");
+  Serial.print(analogRead(yaw_pin));
+  Serial.print(", Raw Thrust = ");
+  Serial.println(analogRead(thrust_pin));*/
   
   // Send message via ESP-NOW
-  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &droneData, sizeof(droneData));
    
   if (result == ESP_OK) {
     Serial.println("Sent with success");
@@ -83,5 +101,5 @@ void loop() {
   else {
     Serial.println("Error sending the data");
   }
-  delay(10);
+  delay(100);
 }
