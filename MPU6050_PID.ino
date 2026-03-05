@@ -30,7 +30,7 @@ void setup(void) {
   Serial.begin(115200);
 
   // Try to initialize!
-  Wire.begin(5, 43);
+  Wire.begin(5, 43); //Change to corresponding SDA/SCL pins
   mpu.begin(0x68);
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
