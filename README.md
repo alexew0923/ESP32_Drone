@@ -10,7 +10,7 @@ Charles P. Allen Robotics club's project in 2025-2026 school year is to build a 
 
 ## Drone
 - XIAO ESP32S3 Sense with External Antenna
-- 2X DRV8833
+- 4 x DRV8833
 - MPU6050
-- 4X 716 Corless Motors
+- 4 x 716 Corless Motors
 - 3D Printed Drone Frame
