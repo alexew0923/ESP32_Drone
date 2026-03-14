@@ -5,8 +5,8 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-#define M1_PIN 8
-#define M2_PIN 7
+#define M1_PIN 7
+#define M2_PIN 8
 #define M3_PIN 1
 #define M4_PIN 4
 
@@ -36,8 +36,8 @@ float velAngX, velAngY;
 float pitchAngle, rollAngle;
 uint32_t LoopTimer;
 
-float PRateRoll = 5; float PRatePitch = PRateRoll; float PRateYaw=2;
-float IRateRoll = 0; float IRatePitch = IRateRoll; float IRateYaw=12;
+float PRateRoll = 40; float PRatePitch = PRateRoll; float PRateYaw=10;
+float IRateRoll = 0; float IRatePitch = IRateRoll; float IRateYaw=0;
 float DRateRoll = 0; float DRatePitch = DRateRoll; float DRateYaw=0;
 float ErrorRateRoll, ErrorRatePitch, ErrorRateYaw;
 float InputRoll, InputThrottle, InputPitch, InputYaw;
@@ -73,6 +73,19 @@ void setup() {
   pinMode(M3_PIN, OUTPUT);
   pinMode(M4_PIN, OUTPUT);
 
+  /*analogWrite(M1_PIN, 50);
+  delay(1000);
+  analogWrite(M1_PIN, 0);
+  analogWrite(M2_PIN, 50);
+  delay(1000);
+  analogWrite(M2_PIN, 0);
+  analogWrite(M3_PIN, 50);
+  delay(1000);
+  analogWrite(M3_PIN, 0);
+  analogWrite(M4_PIN, 50);
+  delay(1000);
+  analogWrite(M4_PIN, 0);*/
+
   // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
 
@@ -88,11 +101,6 @@ void setup() {
 }
  
 void loop() {
-  if (Serial.available() > 0) {
-    PRateRoll = Serial.read();
-    PRatePitch = Serial.read();
-    Serial.println(PRateRoll);
-  }
   getValues();
 
   accAngY = -atan(accX / sqrt(pow(accY, 2) + pow(accZ, 2)));
@@ -120,10 +128,10 @@ void loop() {
     PrevErrorRateYaw = PIDReturn[1]; 
     PrevItermRateYaw = PIDReturn[2];
 
-  M1_strength = droneData.thrust - InputRoll - InputPitch; //- InputYaw
-  M2_strength = droneData.thrust - InputRoll + InputPitch; //+ InputYaw
-  M3_strength = droneData.thrust + InputRoll + InputPitch; //- InputYaw
-  M4_strength = droneData.thrust + InputRoll - InputPitch; //+ InputYaw
+  M1_strength = droneData.thrust - InputRoll - InputPitch - InputYaw - 15; //1
+  M2_strength = droneData.thrust - InputRoll + InputPitch + InputYaw + 15;
+  M3_strength = droneData.thrust + InputRoll + InputPitch - InputYaw - 15; //1
+  M4_strength = droneData.thrust + InputRoll - InputPitch + InputYaw; //2
   
   M1_strength = constrain(M1_strength, 0, 250);
   M2_strength = constrain(M2_strength, 0, 250);
@@ -135,13 +143,21 @@ void loop() {
     M2_strength = 0;
     M3_strength = 0;
     M4_strength = 0;
+    pitchAngle = 0;
+    rollAngle = 0;
+    if (Serial.available() > 0) {
+      PRatePitch = Serial.readString().toFloat();
+      PRatePitch = PRateRoll;
+      Serial.println(PRatePitch);
+      delay(1000);
+    }
     reset_pid();
   }
 
-  /*analogWrite(M1_PIN, M1_strength);
-  analogWrite(M2_PIN, M2_strength);
-  analogWrite(M3_PIN, M3_strength);
-  analogWrite(M4_PIN, M4_strength);*/
+  analogWrite(M1_PIN, M1_strength); //0.9
+  analogWrite(M2_PIN, M2_strength); //1.1
+  analogWrite(M3_PIN, M3_strength); //0.9
+  analogWrite(M4_PIN, M4_strength);
 
   printValues();
 
@@ -163,12 +179,12 @@ void getValues() {
 void pid_equation(float Error, float P , float I, float D, float PrevError, float PrevIterm) {
   float Pterm = P * Error;
   float Iterm = PrevIterm + I * (Error + PrevError) * 0.004/2;
-  if (Iterm > 400) Iterm = 400;
-  else if (Iterm <-400) Iterm = -400;
+  if (Iterm > 200) Iterm = 200;
+  else if (Iterm <-200) Iterm = -200;
   float Dterm = D * (Error - PrevError)/0.004;
   float PIDOutput = Pterm + Iterm + Dterm;
-  if (PIDOutput > 400) PIDOutput = 400;
-  else if (PIDOutput <-400) PIDOutput = -400;
+  if (PIDOutput > 200) PIDOutput = 200;
+  else if (PIDOutput <-200) PIDOutput = -200;
   PIDReturn[0] = PIDOutput;
   PIDReturn[1] = Error;
   PIDReturn[2] = Iterm;
@@ -214,14 +230,14 @@ void printValues() {
   Serial.println(rollAngle);
   Serial.print(",");*/
 
-  /*Serial.print("Roll:");
+  Serial.print("Roll:");
   Serial.print(InputRoll);
   Serial.print(",");
   Serial.print("Pitch:");
   Serial.print(InputPitch);
   Serial.print(",");
   Serial.print("Yaw:");
-  Serial.println(InputYaw);*/
+  Serial.println(InputYaw);
 
   /*Serial.print("Roll:");
   Serial.print(droneData.roll);
@@ -235,7 +251,7 @@ void printValues() {
   Serial.print("Thrust:");
   Serial.println(droneData.thrust);*/
 
-  Serial.print("M1:");
+  /*Serial.print("M1:");
   Serial.print(M1_strength);
   Serial.print(",");
   Serial.print("M2:");
@@ -245,5 +261,5 @@ void printValues() {
   Serial.print(M3_strength);
   Serial.print(",");
   Serial.print("M4:");
-  Serial.println(M4_strength);
+  Serial.println(M4_strength);*/
 }
