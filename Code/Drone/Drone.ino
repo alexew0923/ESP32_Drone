@@ -6,9 +6,9 @@
 #include <Wire.h>
 
 #define M1_PIN 7
-#define M2_PIN 8
+#define M2_PIN 41
 #define M3_PIN 1
-#define M4_PIN 4
+#define M4_PIN 2
 
 int M1_strength;
 int M2_strength;
@@ -34,11 +34,12 @@ float velX, velY, velZ;
 float accAngX, accAngY;
 float velAngX, velAngY;
 float pitchAngle, rollAngle;
+float pitchOffset, rollOffset;
 uint32_t LoopTimer;
 
-float PRateRoll = 40; float PRatePitch = PRateRoll; float PRateYaw=10;
-float IRateRoll = 0; float IRatePitch = IRateRoll; float IRateYaw=0;
-float DRateRoll = 0; float DRatePitch = DRateRoll; float DRateYaw=0;
+float PRateRoll = 0; float PRatePitch = PRateRoll; float PRateYaw = 0;
+float IRateRoll = 0; float IRatePitch = IRateRoll; float IRateYaw = 0;
+float DRateRoll = 0; float DRatePitch = DRateRoll; float DRateYaw = 0;
 float ErrorRateRoll, ErrorRatePitch, ErrorRateYaw;
 float InputRoll, InputThrottle, InputPitch, InputYaw;
 float PrevErrorRateRoll, PrevErrorRatePitch, PrevErrorRateYaw;
@@ -62,7 +63,7 @@ void setup() {
   // Initialize Serial Monitor
   Serial.begin(115200);
 
-  Wire.begin(5, 43);
+  Wire.begin(5, 6);
   mpu.begin(0x68);
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
@@ -98,6 +99,25 @@ void setup() {
   // Once ESPNow is successfully Init, we will register for recv CB to
   // get recv packer info
   esp_now_register_recv_cb(esp_now_recv_cb_t(OnDataRecv));
+
+  delay(5000);
+  for (int i = 0; i < 100; i++) {
+    getValues();
+
+    accAngY = -atan(accX / sqrt(pow(accY, 2) + pow(accZ, 2)));
+    accAngX = atan(accY / sqrt(pow(accX, 2) + pow(accZ, 2)));
+    velAngY = pitchAngle + velY * 0.004;
+    velAngX = rollAngle + velX * 0.004;
+
+    pitchAngle = (0.98 * velAngY) + (0.02 * accAngY);
+    rollAngle = (0.98 * velAngX) + (0.02 * accAngX);
+  }
+  pitchOffset = pitchAngle;
+  rollOffset = rollAngle;
+  analogWrite(M1_PIN, 50);
+  delay(100);
+  analogWrite(M1_PIN, 0);
+
 }
  
 void loop() {
@@ -111,8 +131,8 @@ void loop() {
   pitchAngle = (0.98 * velAngY) + (0.02 * accAngY);
   rollAngle = (0.98 * velAngX) + (0.02 * accAngX);
 
-  ErrorRatePitch = 0 - pitchAngle;
-  ErrorRateRoll = 0 - rollAngle;
+  ErrorRatePitch = 0 - pitchAngle - pitchOffset;
+  ErrorRateRoll = 0 - rollAngle - rollOffset;
   ErrorRateYaw = DesiredRateYaw - velZ;
   
   pid_equation(ErrorRatePitch, PRatePitch, IRatePitch, DRatePitch, PrevErrorRatePitch, PrevItermRatePitch);
@@ -128,35 +148,35 @@ void loop() {
     PrevErrorRateYaw = PIDReturn[1]; 
     PrevItermRateYaw = PIDReturn[2];
 
-  M1_strength = droneData.thrust - InputRoll - InputPitch - InputYaw - 15; //1
-  M2_strength = droneData.thrust - InputRoll + InputPitch + InputYaw + 15;
-  M3_strength = droneData.thrust + InputRoll + InputPitch - InputYaw - 15; //1
-  M4_strength = droneData.thrust + InputRoll - InputPitch + InputYaw; //2
+  M1_strength = droneData.thrust - InputRoll - InputPitch - InputYaw;
+  M2_strength = droneData.thrust - InputRoll + InputPitch + InputYaw;
+  M3_strength = droneData.thrust + InputRoll + InputPitch - InputYaw; 
+  M4_strength = droneData.thrust + InputRoll - InputPitch + InputYaw; 
   
   M1_strength = constrain(M1_strength, 0, 250);
   M2_strength = constrain(M2_strength, 0, 250);
   M3_strength = constrain(M3_strength, 0, 250);
   M4_strength = constrain(M4_strength, 0, 250);
 
-  if (droneData.thrust < 50) {
+  if (droneData.thrust < 51) {
     M1_strength = 0;
     M2_strength = 0;
     M3_strength = 0;
     M4_strength = 0;
-    pitchAngle = 0;
-    rollAngle = 0;
+    //pitchAngle = 0;
+    //rollAngle = 0; 
     if (Serial.available() > 0) {
       PRatePitch = Serial.readString().toFloat();
-      PRatePitch = PRateRoll;
+      PRateRoll = PRatePitch;
       Serial.println(PRatePitch);
       delay(1000);
     }
     reset_pid();
   }
 
-  analogWrite(M1_PIN, M1_strength); //0.9
-  analogWrite(M2_PIN, M2_strength); //1.1
-  analogWrite(M3_PIN, M3_strength); //0.9
+  analogWrite(M1_PIN, M1_strength);
+  analogWrite(M2_PIN, M2_strength);
+  analogWrite(M3_PIN, M3_strength);
   analogWrite(M4_PIN, M4_strength);
 
   printValues();
@@ -222,13 +242,14 @@ void printValues() {
   Serial.print(",");
   Serial.print("VelAngY:");
   Serial.print(velAngY);
-  Serial.println(",");
+  Serial.println(",");*/
+
   Serial.print("PitchAng:");
   Serial.print(pitchAngle);
   Serial.print(",");
   Serial.print("RollAng:");
-  Serial.println(rollAngle);
-  Serial.print(",");*/
+  Serial.print(rollAngle);
+  Serial.print(",");
 
   Serial.print("Roll:");
   Serial.print(InputRoll);
@@ -237,7 +258,8 @@ void printValues() {
   Serial.print(InputPitch);
   Serial.print(",");
   Serial.print("Yaw:");
-  Serial.println(InputYaw);
+  Serial.print(InputYaw);
+  Serial.println(",");
 
   /*Serial.print("Roll:");
   Serial.print(droneData.roll);
@@ -249,7 +271,8 @@ void printValues() {
   Serial.print(droneData.yaw);
   Serial.print(",");
   Serial.print("Thrust:");
-  Serial.println(droneData.thrust);*/
+  Serial.println(droneData.thrust);
+  Serial.println(",");*/
 
   /*Serial.print("M1:");
   Serial.print(M1_strength);
@@ -261,5 +284,6 @@ void printValues() {
   Serial.print(M3_strength);
   Serial.print(",");
   Serial.print("M4:");
-  Serial.println(M4_strength);*/
+  Serial.print(M4_strength);
+  Serial.println(",");*/
 }
