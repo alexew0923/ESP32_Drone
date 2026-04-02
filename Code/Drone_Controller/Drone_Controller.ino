@@ -1,10 +1,10 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-#define roll_pin 4 // ESP32 ADC1 Pins 32~39
+/*#define roll_pin 4 // ESP32 ADC1 Pins 32~39
 #define pitch_pin 3
-#define yaw_pin 2
-#define thrust_pin 1
+#define yaw_pin 2*/
+#define thrust_pin 2
 
 // REPLACE WITH YOUR RECEIVER MAC Address
 uint8_t broadcastAddress[] = {0x10, 0xb4, 0x1d, 0xe8, 0x1a, 0x34};
@@ -70,10 +70,10 @@ float joystickValue(int analogValue) {
 
 void loop() {
   // Set values to send
-  droneData.roll = joystickValue(analogRead(roll_pin))/100;
-  droneData.pitch = joystickValue(analogRead(pitch_pin))/100;
-  droneData.yaw = joystickValue(analogRead(yaw_pin))/100;
-  droneData.thrust = map(analogRead(thrust_pin), 0, 4095, 0, 255);
+  droneData.roll = 0; //joystickValue(analogRead(roll_pin))/100;
+  droneData.pitch = 0; //joystickValue(analogRead(pitch_pin))/100;
+  droneData.yaw = 0; //joystickValue(analogRead(yaw_pin))/100;
+  droneData.thrust = map(analogRead(thrust_pin), 0, 4095, 48, 255);
 
   Serial.print("Roll = ");
   Serial.print(droneData.roll);
